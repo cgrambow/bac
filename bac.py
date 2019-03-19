@@ -168,7 +168,7 @@ def fit_bac(cdata, edata, out_dir, uncertainties=None,
                 take_step = RandomDisplacementBounds(wmin, wmax)
                 res = scipy.optimize.basinhopping(objfun, w0, niter=global_min_iter,
                                                   minimizer_kwargs=minimizer_kwargs,
-                                                  take_step=take_step)
+                                                  take_step=take_step, disp=True)
             else:
                 res = scipy.optimize.minimize(objfun, w0, **minimizer_kwargs)
             w = res.x
