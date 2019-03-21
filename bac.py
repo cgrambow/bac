@@ -236,6 +236,63 @@ def fit_bac(cdata, edata, out_dir, uncertainties=None,
     return collections.OrderedDict(zip(ids, hbac_mean))
 
 
+def apply_bac(data, bacs, geos=None, data_comp=None):
+    bond_types = True if geos is None else False
+    use_atom_features = not any('-' in k for k in bacs.keys())
+
+    ids, mols, hprev = [], [], []
+    for ident, h in data.iteritems():
+        ids.append(ident)
+        if bond_types:
+            mols.append(str_to_mol(ident))
+        else:
+            mol = geo_to_mol(geos[ident])
+            mols.append(mol)
+        hprev.append(h)
+    hprev = np.array(hprev)
+
+    if bond_types:
+        if use_atom_features:
+            features = [get_features(mol, atom_features=True, bond_features=False) for mol in mols]
+        else:
+            features = [get_features(mol, atom_features=False, bond_features=True) for mol in mols]
+        feature_keys = {k for f in features for k in f}
+        if not feature_keys.issubset(set(bacs.keys())):
+            raise Exception('Data contains bond or atom types that are not available in BAC parameters')
+        feature_keys = list(feature_keys)
+        feature_keys.sort()
+
+        x, _ = make_feature_mat(features, feature_keys)
+        w = np.array([bacs[k] for k in feature_keys])
+        hbac = hprev + np.dot(x, w)
+    else:
+        all_atom_symbols = {atom.element.symbol for mol in mols for atom in mol.atoms}
+        if not all_atom_symbols.issubset(set(bacs['a'].keys())):
+            raise Exception('Data contains atom types that are not available in BAC parameters')
+
+        hcorr = np.array([get_bac_correction(mol, **bacs) for mol in mols])
+        hbac = hprev - hcorr
+
+    data_bac = collections.OrderedDict(zip(ids, hbac))
+
+    if data_comp is not None:
+        data_copy = collections.OrderedDict((k, data[k]) for k in data_comp if k in data)
+        data_bac = collections.OrderedDict((k, data_bac[k]) for k in data_copy)
+        data_comp_subset = collections.OrderedDict((k, data_comp[k]) for k in data_copy)
+        hprev = np.array(data_copy.values())
+        hbac = np.array(data_bac.values())
+        hcomp = np.array(data_comp_subset.values())
+        rmse_prev = calc_rmse(hcomp, hprev)
+        mae_prev = calc_mae(hcomp, hprev)
+        rmse = calc_rmse(hcomp, hbac)
+        mae = calc_mae(hcomp, hbac)
+        print('Number of molecules: {}'.format(len(data_copy)))
+        print('RMSE before/after fitting: {:.2f}/{:.2f}'.format(rmse_prev, rmse))
+        print('MAE before/after fitting: {:.2f}/{:.2f}'.format(mae_prev, mae))
+
+    return data_bac
+
+
 def lin_reg(x, y, weight_mat):
     w = np.linalg.solve(np.dot(x.T, np.dot(weight_mat, x)), np.dot(x.T, np.dot(weight_mat, y)))
     ypred = np.dot(x, w)

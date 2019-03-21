@@ -5,9 +5,8 @@ import argparse
 import collections
 import os
 
-import numpy as np
-
 from bac import fit_bac
+from util import read_csv, write_csv, read_xyz_file
 
 
 def main():
@@ -53,49 +52,6 @@ def main():
         f.write('Configuration used to fit BACs:\n')
         for k, v in configs.iteritems():
             f.write('{}:  {}\n'.format(k, v))
-
-
-def read_csv(path, third_col=False, third_col_type=float):
-    with open(path) as f:
-        d = []
-        d2 = {}
-        for line in f:
-            ls = line.strip().split()
-            if ls:
-                ident = ls[0]
-                d.append((ident, float(ls[1])))
-                if third_col:
-                    d2[ident] = third_col_type(ls[2])
-    return d, d2
-
-
-def write_csv(path, data):
-    with open(path, 'w') as f:
-        for k, v in data.iteritems():
-            f.write('{}   {}\n'.format(k, v))
-
-
-def read_xyz_file(path):
-    with open(path) as f:
-        contents = [line.strip() for line in f]
-
-    xyzs = []
-    i = 0
-    while i < len(contents):
-        if not contents[i]:  # Empty line
-            break
-        else:
-            natoms = int(contents[i])
-            xyz = contents[(i+2):(i+2+natoms)]
-            symbols, coords = [], []
-            for line in xyz:
-                data = line.split()
-                symbols.append(data[0])
-                coords.append([float(c) for c in data[1:]])
-            xyzs.append((symbols, np.array(coords)))
-            i += natoms + 2
-
-    return xyzs
 
 
 def parse_args():
