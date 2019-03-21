@@ -111,9 +111,9 @@ def fit_bac(cdata, edata, out_dir, uncertainties=None,
         feature_keys = list({k for f in features for k in f})
         feature_keys.sort()
         x, nocc = make_feature_mat(features, feature_keys)
-        for idx in np.where(nocc <= 1)[0][::-1]:  # Remove features if they only occur once
-            del feature_keys[idx]
-        x, nocc = make_feature_mat(features, feature_keys)
+        # for idx in np.where(nocc <= 1)[0][::-1]:  # Remove features if they only occur once
+        #     del feature_keys[idx]
+        # x, nocc = make_feature_mat(features, feature_keys)
 
         data = (features, hexpt, hcalc, weights)
         folded_data = make_folds(folds, *data)
