@@ -59,6 +59,9 @@ def fit_bac(cdata, edata, out_dir, uncertainties=None,
     rmse_prev = calc_rmse(hexpt, hcalc)
     mae_prev = calc_mae(hexpt, hcalc)
 
+    if not os.path.exists(out_dir):
+        os.makedirs(out_dir)
+
     # Display the 10 worst ones before fitting
     diff = hexpt - hcalc
     print('Worst ones before fitting:')
@@ -67,6 +70,11 @@ def fit_bac(cdata, edata, out_dir, uncertainties=None,
     for ident, d, hexpti, hcalci in large_diff[:10][::-1]:
         print('{}  {: .2f}  {: .2f}  {: .2f}'.format(ident, d, hexpti, hcalci))
     print
+    with open(os.path.join(out_dir, 'worst_errors.txt'), 'w') as f:
+        f.write('Worst ones before fitting:\n')
+        for ident, d, hexpti, hcalci in large_diff[:10][::-1]:
+            f.write('{}  {: .2f}  {: .2f}  {: .2f}\n'.format(ident, d, hexpti, hcalci))
+        f.write('\n')
 
     # Shuffle data and set up some arrays
     if folds > 1:
@@ -193,6 +201,10 @@ def fit_bac(cdata, edata, out_dir, uncertainties=None,
     large_diff.sort(key=lambda _x: _x[1], reverse=True)
     for ident, d, hexpti, hbaci in large_diff[:10][::-1]:
         print('{}  {: .2f}  {: .2f}  {: .2f}'.format(ident, d, hexpti, hbaci))
+    with open(os.path.join(out_dir, 'worst_errors.txt'), 'a') as f:
+        f.write('Worst ones after fitting:\n')
+        for ident, d, hexpti, hbaci in large_diff[:10][::-1]:
+            f.write('{}  {: .2f}  {: .2f}  {: .2f}\n'.format(ident, d, hexpti, hbaci))
 
     rmse = np.mean(rmses)
     mae = np.mean(maes)
@@ -206,8 +218,6 @@ def fit_bac(cdata, edata, out_dir, uncertainties=None,
     print('Total RMSE before/after fitting: {:.2f}/{:.2f}'.format(rmse_prev, rmse))
     print('Total MAE before/after fitting: {:.2f}/{:.2f}'.format(mae_prev, mae))
 
-    if not os.path.exists(out_dir):
-        os.makedirs(out_dir)
     error_path = os.path.join(out_dir, 'errors.txt')
     bac_path = os.path.join(out_dir, 'bacs.txt')
     json_path = os.path.join(out_dir, 'bacs.json')
